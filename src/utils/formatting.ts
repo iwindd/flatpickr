@@ -25,9 +25,12 @@ export type token =
   | "s"
   | "u"
   | "w"
-  | "y";
+  | "y"
+  | "a"
+  | "A";
 
 const doNothing = (): undefined => undefined;
+const baseTwoDigitsYear = 2000;
 
 export const monthToStr = (
   monthNumber: number,
@@ -38,7 +41,8 @@ export const monthToStr = (
 export type RevFormatFn = (
   date: Date,
   data: string,
-  locale: Locale
+  locale: Locale,
+  options: ParsedOptions
 ) => Date | void | undefined;
 export type RevFormat = Record<string, RevFormatFn>;
 export const revFormat: RevFormat = {
@@ -115,7 +119,31 @@ export const revFormat: RevFormat = {
     new Date(parseFloat(unixMillSeconds)),
   w: doNothing,
   y: (dateObj: Date, year: string) => {
-    dateObj.setFullYear(2000 + parseFloat(year));
+    dateObj.setFullYear(baseTwoDigitsYear + parseFloat(year));
+  },
+  a: function (
+    dateObj: Date,
+    alteredYear: string,
+    _: Locale,
+    options: ParsedOptions
+  ) {
+    dateObj.setFullYear(
+      baseTwoDigitsYear + parseFloat(alteredYear) - (options.alterYear % 100)
+    );
+  },
+  A: function (
+    dateObj: Date,
+    alteredYear: string,
+    _: Locale,
+    options: ParsedOptions
+  ) {
+    console.log(
+      parseFloat(alteredYear),
+      "alter",
+      options.alterYear,
+      parseFloat(alteredYear) - options.alterYear
+    );
+    dateObj.setFullYear(parseFloat(alteredYear) - options.alterYear);
   },
 };
 
@@ -144,6 +172,8 @@ export const tokenRegex: TokenRegex = {
   u: "(.+)",
   w: "(\\d\\d|\\d)",
   y: "(\\d{2})",
+  a: "(\\d{2})",
+  A: "(\\d{4})",
 };
 
 export type Formats = Record<
@@ -240,4 +270,12 @@ export const formats: Formats = {
 
   // last two digits of year e.g. 16 for 2016
   y: (date: Date) => String(date.getFullYear()).substring(2),
+
+  // get last 2 digits altered year
+  a: (date: Date, _: Locale, options: ParsedOptions) =>
+    pad(date.getFullYear() + options.alterYear, 2),
+
+  // get full altered year padded (0001-9999)
+  A: (date: Date, _: Locale, options: ParsedOptions) =>
+    pad(date.getFullYear() + options.alterYear, 4),
 };
